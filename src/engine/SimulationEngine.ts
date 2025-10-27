@@ -138,6 +138,13 @@ export class SimulationEngine {
         simulationAction: (params) => this.simulateMacSpoof(params)
       },
       {
+        id: 'connect',
+        template: 'sim connect --mac=<target-mac-address>',
+        description: 'Connect attacker to a device by MAC address',
+        category: 'connect' as const,
+        simulationAction: (params) => this.simulateConnect(params)
+      },
+      {
         id: 'defend',
         template: 'sim defend --device=<target> --action=<defense-type>',
         description: 'Simulate defensive security measures',
@@ -252,7 +259,10 @@ export class SimulationEngine {
       return events;
     }
     
-    const finalMac = newMac || this.deviceGenerator.generateMac();
+    if (!newMac) {
+      this.log(`SIMULATED MAC SPOOFING: MAC address is required`);
+      return events;
+    }
     
     // Find the device by ID first, then by name if not found
     let device = this.state.devices.get(deviceIdentifier);
@@ -277,32 +287,110 @@ export class SimulationEngine {
 
     const oldMac = device.syntheticMac;
 
-    const event: SimulationEvent = {
+    // Find the device with the MAC address being spoofed
+    const targetDevice = Array.from(this.state.devices.values())
+      .find(d => d.syntheticMac === newMac && d.id !== device.id);
+
+    if (targetDevice && targetDevice.pairedWith.length > 0) {
+      // Disconnect the original device from its paired device
+      const pairedDeviceId = targetDevice.pairedWith[0];
+      const pairedDevice = this.state.devices.get(pairedDeviceId);
+      
+      if (pairedDevice) {
+        // Remove the target device from the paired device's pairedWith array
+        pairedDevice.pairedWith = pairedDevice.pairedWith.filter(id => id !== targetDevice.id);
+        targetDevice.pairedWith = [];
+        targetDevice.status = 'discovered';
+        
+        // Create disconnect event
+        const disconnectEvent: SimulationEvent = {
+          id: `disconnect_${Date.now()}_${this.random.nextInt(1000)}`,
+          timestamp: new Date(),
+          type: 'discovery',
+          sourceDevice: targetDevice.id,
+          targetDevice: pairedDeviceId,
+          description: `${targetDevice.name} (${newMac}) disconnected from ${pairedDevice.name}`,
+          severity: 'medium',
+          success: true,
+          details: {
+            targetDevice: targetDevice.name,
+            pairedDevice: pairedDevice.name
+          }
+        };
+        events.push(disconnectEvent);
+        this.state.events.push(disconnectEvent);
+        this.log(`SIMULATED DISCONNECTION: ${targetDevice.name} disconnected from ${pairedDevice.name}`);
+      }
+      
+      // Connect the attacker (device with spoofed MAC) to the paired device
+      if (pairedDevice) {
+        device.pairedWith = [pairedDeviceId];
+        pairedDevice.pairedWith = [device.id];
+        pairedDevice.status = 'paired';
+        device.status = 'spoofed';
+        
+        // Create connect event
+        const connectEvent: SimulationEvent = {
+          id: `connect_${Date.now()}_${this.random.nextInt(1000)}`,
+          timestamp: new Date(),
+          type: 'discovery',
+          sourceDevice: device.id,
+          targetDevice: pairedDeviceId,
+          description: `${device.name} (now using MAC ${newMac}) connected to ${pairedDevice.name}`,
+          severity: 'high',
+          success: true,
+          details: {
+            attackerDevice: device.name,
+            targetDevice: pairedDevice.name,
+            spoofedMac: newMac
+          }
+        };
+        events.push(connectEvent);
+        this.state.events.push(connectEvent);
+        this.log(`SIMULATED CONNECTION: ${device.name} now connected to ${pairedDevice.name} using spoofed MAC ${newMac}`);
+      }
+    }
+
+    const spoofEvent: SimulationEvent = {
       id: `spoof_${Date.now()}_${this.random.nextInt(1000)}`,
       timestamp: new Date(),
       type: 'mac_spoof',
       sourceDevice: device.id,
-      description: `Changed ${device.name} MAC address from ${oldMac} to ${finalMac}`,
+      description: `Changed ${device.name} MAC address from ${oldMac} to ${newMac}`,
       severity: 'high',
       success: true,
       details: {
         oldMac,
-        newMac: finalMac,
+        newMac,
         deviceName: device.name,
         deviceId: device.id
       }
     };
 
     // Actually update the device's MAC address
-    device.syntheticMac = finalMac;
+    device.syntheticMac = newMac;
     device.lastSeen = new Date();
     
-    // Update device status to indicate spoofing
-    device.status = 'spoofed';
+    // Update the attacker's name to match the spoofed device's name
+    if (device.id === 'attacker' && targetDevice) {
+      const originalName = device.name;
+      device.name = `${targetDevice.name} (ATTACKER)`;
+      
+      // Update the spoof event description to reflect the name change
+      spoofEvent.description = `Changed ${originalName} MAC address from ${oldMac} to ${newMac} and renamed to ${device.name}`;
+      spoofEvent.details = {
+        oldMac,
+        newMac,
+        deviceName: device.name,
+        deviceId: device.id,
+        originalName: originalName,
+        spoofedDeviceName: targetDevice.name
+      };
+    }
 
-    events.push(event);
-    this.state.events.push(event);
-    this.log(`SIMULATED MAC SPOOFING: Successfully changed ${device.name} MAC from ${oldMac} to ${finalMac}`);
+    events.push(spoofEvent);
+    this.state.events.push(spoofEvent);
+    this.log(`SIMULATED MAC SPOOFING: Successfully changed ${device.name} MAC from ${oldMac} to ${newMac}`);
     return events;
   }
 
@@ -339,6 +427,123 @@ export class SimulationEngine {
     }
 
     this.log(`SIMULATED DEFENSE: Activated ${action} on target device`);
+    return events;
+  }
+
+  private simulateConnect(params: Record<string, any>): SimulationEvent[] {
+    const events: SimulationEvent[] = [];
+    const targetMac = params.mac;
+    
+    // Validate MAC address format if provided
+    if (!targetMac || !/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/.test(targetMac)) {
+      this.log(`SIMULATED CONNECT: Invalid MAC address format: ${targetMac}`);
+      return events;
+    }
+    
+    // Find the attacker device
+    const attacker = this.state.devices.get('attacker');
+    if (!attacker) {
+      this.log(`SIMULATED CONNECT: Attacker device not found`);
+      return events;
+    }
+    
+    // Find the target device by MAC address
+    const targetDevice = Array.from(this.state.devices.values())
+      .find(d => d.syntheticMac === targetMac && d.id !== 'attacker');
+    
+    if (!targetDevice) {
+      this.log(`SIMULATED CONNECT: Device with MAC ${targetMac} not found`);
+      return events;
+    }
+    
+    // If attacker is already connected to another device, disconnect first
+    if (attacker.pairedWith.length > 0) {
+      const oldPairedId = attacker.pairedWith[0];
+      attacker.pairedWith = [];
+      
+      const oldPairedDevice = this.state.devices.get(oldPairedId);
+      if (oldPairedDevice) {
+        oldPairedDevice.pairedWith = oldPairedDevice.pairedWith.filter(id => id !== attacker.id);
+        if (oldPairedDevice.pairedWith.length === 0) {
+          oldPairedDevice.status = 'discovered';
+        }
+        
+        const disconnectEvent: SimulationEvent = {
+          id: `disconnect_${Date.now()}_${this.random.nextInt(1000)}`,
+          timestamp: new Date(),
+          type: 'discovery',
+          sourceDevice: attacker.id,
+          targetDevice: oldPairedId,
+          description: `${attacker.name} disconnected from ${oldPairedDevice.name}`,
+          severity: 'low',
+          success: true,
+          details: {
+            attackerDevice: attacker.name,
+            oldDevice: oldPairedDevice.name
+          }
+        };
+        events.push(disconnectEvent);
+        this.state.events.push(disconnectEvent);
+        this.log(`SIMULATED DISCONNECTION: ${attacker.name} disconnected from ${oldPairedDevice.name}`);
+      }
+    }
+    
+    // If target device is already paired, disconnect it from its current partner
+    if (targetDevice.pairedWith.length > 0) {
+      const currentPartnerId = targetDevice.pairedWith[0];
+      const currentPartner = this.state.devices.get(currentPartnerId);
+      
+      if (currentPartner) {
+        currentPartner.pairedWith = currentPartner.pairedWith.filter(id => id !== targetDevice.id);
+        if (currentPartner.pairedWith.length === 0) {
+          currentPartner.status = 'discovered';
+        }
+        
+        const disconnectEvent: SimulationEvent = {
+          id: `disconnect_target_${Date.now()}_${this.random.nextInt(1000)}`,
+          timestamp: new Date(),
+          type: 'discovery',
+          sourceDevice: targetDevice.id,
+          targetDevice: currentPartnerId,
+          description: `${targetDevice.name} (${targetMac}) disconnected from ${currentPartner.name}`,
+          severity: 'medium',
+          success: true,
+          details: {
+            targetDevice: targetDevice.name,
+            pairedDevice: currentPartner.name
+          }
+        };
+        events.push(disconnectEvent);
+        this.state.events.push(disconnectEvent);
+        this.log(`SIMULATED DISCONNECTION: ${targetDevice.name} disconnected from ${currentPartner.name}`);
+      }
+    }
+    
+    // Connect attacker to target device
+    attacker.pairedWith = [targetDevice.id];
+    targetDevice.pairedWith = [attacker.id];
+    attacker.status = 'paired';
+    targetDevice.status = 'paired';
+    
+    const connectEvent: SimulationEvent = {
+      id: `connect_${Date.now()}_${this.random.nextInt(1000)}`,
+      timestamp: new Date(),
+      type: 'discovery',
+      sourceDevice: attacker.id,
+      targetDevice: targetDevice.id,
+      description: `${attacker.name} connected to ${targetDevice.name} (${targetMac})`,
+      severity: 'high',
+      success: true,
+      details: {
+        attackerDevice: attacker.name,
+        targetDevice: targetDevice.name,
+        targetMac: targetMac
+      }
+    };
+    events.push(connectEvent);
+    this.state.events.push(connectEvent);
+    this.log(`SIMULATED CONNECTION: ${attacker.name} successfully connected to ${targetDevice.name} (${targetMac})`);
+    
     return events;
   }
 

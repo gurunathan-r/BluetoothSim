@@ -23,7 +23,7 @@ interface Connection {
   id: string;
   source: string;
   target: string;
-  type: 'discovery' | 'message' | 'data_access' | 'spoof' | 'defense';
+  type: 'discovery' | 'message' | 'data_access' | 'spoof' | 'defense' | 'connect';
   active: boolean;
   timestamp: Date;
 }
@@ -80,25 +80,30 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
   }, [devices]);
 
   useEffect(() => {
-    // Process events to create connections
+    // Process paired devices to create persistent connections
     const newConnections: Connection[] = [];
+    const addedPairs = new Set<string>();
     
-    events.forEach(event => {
-      if (event.targetDevice) {
-        const connection: Connection = {
-          id: `conn-${event.id}`,
-          source: event.sourceDevice,
-          target: event.targetDevice,
-          type: event.type as Connection['type'],
-          active: true,
-          timestamp: event.timestamp
-        };
-        newConnections.push(connection);
-      }
+    // Add connections ONLY from pairedWith relationships (not from events)
+    devices.forEach(device => {
+      device.pairedWith.forEach(pairedDeviceId => {
+        const pairKey = [device.id, pairedDeviceId].sort().join('-');
+        if (!addedPairs.has(pairKey)) {
+          addedPairs.add(pairKey);
+          newConnections.push({
+            id: `paired-${pairKey}`,
+            source: device.id,
+            target: pairedDeviceId,
+            type: 'discovery',
+            active: true,
+            timestamp: new Date()
+          });
+        }
+      });
     });
     
     setConnections(newConnections);
-  }, [events]);
+  }, [devices]);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -138,21 +143,29 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
       const targetNode = deviceNodes.find(n => n.id === connection.target);
       
       if (sourceNode && targetNode) {
+        const isPersistent = connection.id.startsWith('paired-');
+        
         const line = mainGroup.append('line')
           .attr('x1', sourceNode.x)
           .attr('y1', sourceNode.y)
           .attr('x2', targetNode.x)
           .attr('y2', targetNode.y)
           .attr('stroke', getConnectionColor(connection.type))
-          .attr('stroke-width', 3)
-          .attr('stroke-dasharray', '5,5')
-          .attr('opacity', 0.7);
+          .attr('stroke-width', 3);
 
-        // Animate connection
-        line.transition()
-          .duration(1000)
-          .attr('opacity', 0)
-          .remove();
+        if (isPersistent) {
+          // Persistent connections are solid, green, and visible
+          line.attr('opacity', 0.8)
+              .attr('stroke', '#4ecdc4'); // Green for paired connections
+        } else {
+          // Temporary connections are dashed and fade out
+          line.attr('stroke-dasharray', '5,5')
+              .attr('opacity', 0.7)
+              .transition()
+              .duration(1000)
+              .attr('opacity', 0)
+              .remove();
+        }
       }
     });
 
@@ -209,13 +222,13 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
         .attr('fill', '#8b949e')
         .text(node.device.syntheticMac);
 
-      // Status indicators - completely separate positioning to avoid any overlap
+      // Status indicators - repositioned to the left side to avoid overlap with labels
       let yOffset = 0;
-      const indicatorSize = 12;
-      const indicatorGap = 25;
-      const rightOffset = node.radius + 35;
+      const indicatorSize = 10;
+      const indicatorGap = 20;
+      const rightOffset = -node.radius - 15; // Moved to left side instead of right
 
-      // Vulnerability indicator - positioned at top right
+      // Vulnerability indicator - repositioned to top left
       if (node.device.vulnerabilityScore > 50) {
         deviceGroup.append('circle')
           .attr('r', indicatorSize)
@@ -223,7 +236,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
           .attr('cy', -node.radius + yOffset)
           .attr('fill', '#ff6b6b')
           .attr('stroke', '#ffffff')
-          .attr('stroke-width', 3)
+          .attr('stroke-width', 2)
           .attr('opacity', 0.9);
         
         deviceGroup.append('text')
@@ -231,7 +244,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
           .attr('y', -node.radius + yOffset)
           .attr('text-anchor', 'middle')
           .attr('dy', '0.35em')
-          .attr('font-size', '14px')
+          .attr('font-size', '10px')
           .attr('fill', '#ffffff')
           .attr('font-weight', 'bold')
           .text('!');
@@ -247,7 +260,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
           .attr('cy', -node.radius + yOffset)
           .attr('fill', '#4ecdc4')
           .attr('stroke', '#ffffff')
-          .attr('stroke-width', 3)
+          .attr('stroke-width', 2)
           .attr('opacity', 0.9);
         
         deviceGroup.append('text')
@@ -255,7 +268,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
           .attr('y', -node.radius + yOffset)
           .attr('text-anchor', 'middle')
           .attr('dy', '0.35em')
-          .attr('font-size', '14px')
+          .attr('font-size', '10px')
           .attr('fill', '#ffffff')
           .attr('font-weight', 'bold')
           .text('✓');
@@ -271,7 +284,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
           .attr('cy', -node.radius + yOffset)
           .attr('fill', '#ffd93d')
           .attr('stroke', '#ffffff')
-          .attr('stroke-width', 3)
+          .attr('stroke-width', 2)
           .attr('opacity', 0.9);
         
         deviceGroup.append('text')
@@ -279,7 +292,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
           .attr('y', -node.radius + yOffset)
           .attr('text-anchor', 'middle')
           .attr('dy', '0.35em')
-          .attr('font-size', '14px')
+          .attr('font-size', '10px')
           .attr('fill', '#000000')
           .attr('font-weight', 'bold')
           .text('S');
@@ -312,40 +325,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
       });
     });
 
-    // Add legend
-    const legend = svg.append('g')
-      .attr('class', 'legend')
-      .attr('transform', 'translate(20, 20)');
-
-    legend.append('text')
-      .attr('font-size', '14px')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#ffffff')
-      .text('Device Status');
-
-    const legendItems = [
-      { color: '#ff6b6b', label: 'Vulnerable' },
-      { color: '#4ecdc4', label: 'Protected' },
-      { color: '#ffd93d', label: 'Spoofed' },
-      { color: '#96ceb4', label: 'Paired' },
-      { color: '#8b949e', label: 'Discovered' }
-    ];
-
-    legendItems.forEach((item, index) => {
-      const itemGroup = legend.append('g')
-        .attr('transform', `translate(0, ${25 + index * 20})`);
-
-      itemGroup.append('circle')
-        .attr('r', 6)
-        .attr('fill', item.color);
-
-      itemGroup.append('text')
-        .attr('x', 15)
-        .attr('dy', '0.35em')
-        .attr('font-size', '12px')
-        .attr('fill', '#ffffff')
-        .text(item.label);
-    });
+    // Legend moved to fixed HTML overlay to avoid overlapping SVG content
 
   }, [deviceNodes, connections, selectedDevice, animationFrame, devices]);
 
@@ -355,6 +335,7 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
       case 'message': return '#ffd93d';
       case 'data_access': return '#ff6b6b';
       case 'spoof': return '#ff9ff3';
+      case 'connect': return '#96ceb4';
       case 'defense': return '#4ecdc4';
       default: return '#8b949e';
     }
@@ -385,6 +366,14 @@ const TopologyCanvas: React.FC<TopologyCanvasProps> = ({
       </div>
       
       <div className="canvas-content">
+        <div className="canvas-legend" aria-hidden>
+          <div className="legend-title">Device Status</div>
+          <div className="legend-row"><span className="legend-dot" style={{ background: '#ff6b6b' }} />Vulnerable</div>
+          <div className="legend-row"><span className="legend-dot" style={{ background: '#4ecdc4' }} />Protected</div>
+          <div className="legend-row"><span className="legend-dot" style={{ background: '#ffd93d' }} />Spoofed</div>
+          <div className="legend-row"><span className="legend-dot" style={{ background: '#96ceb4' }} />Paired</div>
+          <div className="legend-row"><span className="legend-dot" style={{ background: '#8b949e' }} />Discovered</div>
+        </div>
         <svg
           ref={svgRef}
           width="100%"

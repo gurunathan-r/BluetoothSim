@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Play, Settings, BookOpen, Shield, Users, Wifi } from 'lucide-react';
-import { Scenario, SimulationEngine } from '../types/simulation';
+import { Scenario } from '../types/simulation';
+import { SimulationEngine } from '../engine/SimulationEngine';
 import { ScenarioLibrary } from '../scenarios/ScenarioLibrary';
 import './ScenarioControls.css';
 
@@ -43,11 +44,7 @@ const ScenarioControls: React.FC<ScenarioControlsProps> = ({
 
   const getScenarioIcon = (scenarioId: string) => {
     switch (scenarioId) {
-      case 'bluejacking_demo': return <Users size={20} />;
-      case 'bluesnarfing_demo': return <Shield size={20} />;
       case 'mac_spoofing_demo': return <Settings size={20} />;
-      case 'crowded_cafe': return <Users size={20} />;
-      case 'office_environment': return <BookOpen size={20} />;
       default: return <Play size={20} />;
     }
   };

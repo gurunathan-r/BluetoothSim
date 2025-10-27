@@ -53,38 +53,21 @@ function App() {
     setTimeout(() => {
       const templates = simulationEngine.getCommandTemplates();
       
-      // Initial scan
-      const scanTemplate = templates.find(t => t.id === 'scan');
-      if (scanTemplate) {
-        simulationEngine.executeCommand(scanTemplate, { 
-          range: scenario.signalRange.toString(),
-          filter: 'all'
-        });
+      // Skip initial scan for MAC spoofing scenario to show only paired connections
+      if (scenario.id !== 'mac_spoofing_demo') {
+        // Initial scan
+        const scanTemplate = templates.find(t => t.id === 'scan');
+        if (scanTemplate) {
+          simulationEngine.executeCommand(scanTemplate, { 
+            range: scenario.signalRange.toString(),
+            filter: 'all'
+          });
+        }
       }
 
       // Scenario-specific demo commands
       setTimeout(() => {
-        if (scenario.id === 'bluejacking_demo') {
-          const messageTemplate = templates.find(t => t.id === 'message');
-          if (messageTemplate) {
-            simulationEngine.executeCommand(messageTemplate, {
-              from: 'attacker',
-              to: 'all',
-              payload: 'Welcome to BlueJacking demo!'
-            });
-          }
-        } else if (scenario.id === 'bluesnarfing_demo') {
-          const pullInfoTemplate = templates.find(t => t.id === 'pull_info');
-          if (pullInfoTemplate) {
-            const vulnerableDevice = scenario.devices.find(d => d.vulnerabilityScore > 50);
-            if (vulnerableDevice) {
-              simulationEngine.executeCommand(pullInfoTemplate, {
-                target: vulnerableDevice.id,
-                protocol: 'OBEX'
-              });
-            }
-          }
-        } else if (scenario.id === 'mac_spoofing_demo') {
+        if (scenario.id === 'mac_spoofing_demo') {
           const setMacTemplate = templates.find(t => t.id === 'set_mac');
           if (setMacTemplate) {
             simulationEngine.executeCommand(setMacTemplate, {

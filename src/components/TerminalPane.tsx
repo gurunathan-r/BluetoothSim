@@ -181,15 +181,24 @@ const TerminalPane: React.FC<TerminalPaneProps> = ({
     for (let i = 2; i < parts.length; i++) {
       const part = parts[i];
       if (part.startsWith('--')) {
-        const key = part.slice(2);
-        const value = parts[i + 1];
-        if (value && !value.startsWith('--')) {
+        // Check if the parameter contains an equals sign
+        if (part.includes('=')) {
+          const [key, ...valueParts] = part.substring(2).split('=');
+          const value = valueParts.join('='); // Rejoin in case value contains '='
           // Remove angle brackets if present and clean quotes
           const cleanValue = value.replace(/^<|>$/g, '').replace(/^["']|["']$/g, '');
           params[key] = cleanValue;
-          i++; // Skip the value
         } else {
-          params[key] = true;
+          const key = part.slice(2);
+          const value = parts[i + 1];
+          if (value && !value.startsWith('--')) {
+            // Remove angle brackets if present and clean quotes
+            const cleanValue = value.replace(/^<|>$/g, '').replace(/^["']|["']$/g, '');
+            params[key] = cleanValue;
+            i++; // Skip the value
+          } else {
+            params[key] = true;
+          }
         }
       }
     }
