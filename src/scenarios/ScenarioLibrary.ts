@@ -355,13 +355,49 @@ export class ScenarioLibrary {
     };
   }
 
+  getSimpleSpoofingScenario(): Scenario {
+    // Create 2 devices that are paired with each other
+    const phone1 = this.createPhone('iPhone 14', { x: 200, y: 150 });
+    const phone2 = this.createPhone('Samsung Galaxy S23', { x: 400, y: 150 });
+    
+    // Set them as paired with each other
+    phone1.pairedWith = [phone2.id];
+    phone2.pairedWith = [phone1.id];
+    phone1.status = 'paired';
+    phone2.status = 'paired';
+    
+    const devices: Device[] = [
+      this.createAttackerDevice(),
+      phone1,
+      phone2
+    ];
+
+    return {
+      id: 'simple_spoofing_demo',
+      name: 'MAC Spoofing Attack Scenario',
+      description: 'Two devices are connected via Bluetooth. Spoof the MAC address to intercept the connection.',
+      learningObjectives: [
+        'Understand MAC address spoofing attacks',
+        'Learn how MAC addresses identify devices in Bluetooth',
+        'Recognize connection hijacking via spoofing',
+        'Understand the security implications of spoofable identifiers'
+      ],
+      prerequisites: [
+        'Basic understanding of Bluetooth concepts',
+        'Knowledge of device identification'
+      ],
+      deviceCount: devices.length,
+      defenseLevel: 40,
+      signalRange: 10,
+      devices,
+      events: [],
+      seed: 99999
+    };
+  }
+
   getAllScenarios(): Scenario[] {
     return [
-      this.getBlueJackingScenario(),
-      this.getBluesnarfingScenario(),
-      this.getMacSpoofingScenario(),
-      this.getCrowdedCafeScenario(),
-      this.getOfficeEnvironmentScenario()
+      this.getMacSpoofingScenario()
     ];
   }
 }

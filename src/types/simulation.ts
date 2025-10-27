@@ -18,7 +18,7 @@ export interface Device {
 export interface SimulationEvent {
   id: string;
   timestamp: Date;
-  type: 'discovery' | 'pairing_attempt' | 'message_sent' | 'data_access' | 'mac_spoof' | 'defense_activated';
+  type: 'discovery' | 'pairing_attempt' | 'message_sent' | 'data_access' | 'mac_spoof' | 'defense_activated' | 'connect';
   sourceDevice: string;
   targetDevice?: string;
   description: string;
@@ -45,9 +45,11 @@ export interface CommandTemplate {
   id: string;
   template: string;
   description: string;
-  category: 'scan' | 'message' | 'access' | 'spoof' | 'defend';
+  category: 'scan' | 'message' | 'access' | 'spoof' | 'connect' | 'defend';
   simulationAction: (params: Record<string, any>) => SimulationEvent[];
 }
+
+// Connection command category added for topology management
 
 export interface SimulationState {
   currentScenario: Scenario | null;
