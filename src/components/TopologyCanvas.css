@@ -1,0 +1,151 @@
+/* Topology Canvas Styles */
+.topology-canvas {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0d1117;
+  color: #c9d1d9;
+}
+
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+
+.canvas-header h3 {
+  color: #58a6ff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.canvas-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.device-count,
+.event-count {
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #58a6ff;
+}
+
+.canvas-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas-content svg {
+  width: 100%;
+  height: 100%;
+  background: #0d1117;
+}
+
+.device-group {
+  transition: all 0.3s ease;
+}
+
+.device-group:hover {
+  transform: scale(1.05);
+}
+
+.legend {
+  pointer-events: none;
+}
+
+.legend text {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.scenario-info {
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  padding: 1rem;
+}
+
+.scenario-info h4 {
+  color: #58a6ff;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.scenario-info p {
+  color: #8b949e;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.scenario-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+}
+
+.scenario-stats span {
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #58a6ff;
+}
+
+/* Device animations */
+@keyframes pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.3; }
+}
+
+.device-group.vulnerable circle:first-child {
+  animation: pulse 2s infinite;
+}
+
+/* Connection animations */
+@keyframes dash {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 20; }
+}
+
+.device-group line {
+  animation: dash 1s linear infinite;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .canvas-header {
+    padding: 0.5rem;
+  }
+  
+  .canvas-header h3 {
+    font-size: 1rem;
+  }
+  
+  .canvas-info {
+    gap: 0.5rem;
+  }
+  
+  .device-count,
+  .event-count {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .scenario-info {
+    padding: 0.75rem;
+  }
+  
+  .scenario-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

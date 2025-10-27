@@ -1,0 +1,234 @@
+/* Safety Disclaimer Styles */
+.safety-disclaimer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.disclaimer-content {
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.disclaimer-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.warning-icon {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
+
+.disclaimer-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.disclaimer-body {
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.warning-section {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.warning-section h2 {
+  color: #ff6b6b;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-section p {
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.feature-card {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 212, 255, 0.2);
+}
+
+.feature-icon {
+  color: #00d4ff;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  color: #00d4ff;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.prohibited-uses,
+.learning-objectives {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prohibited-uses h3 {
+  color: #ff6b6b;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.learning-objectives h3 {
+  color: #4ecdc4;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.prohibited-uses ul,
+.learning-objectives ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prohibited-uses li,
+.learning-objectives li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.prohibited-uses li::before {
+  content: "❌";
+  position: absolute;
+  left: 0;
+}
+
+.learning-objectives li::before {
+  content: "✅";
+  position: absolute;
+  left: 0;
+}
+
+.acknowledgment-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.checkbox-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+}
+
+.acknowledge-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #00d4ff;
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.checkbox-container label {
+  font-size: 1rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.acknowledge-button {
+  background: linear-gradient(45deg, #00d4ff, #4ecdc4);
+  border: none;
+  border-radius: 25px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+}
+
+.acknowledge-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+}
+
+.acknowledge-button:disabled {
+  background: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .disclaimer-content {
+    width: 95%;
+    padding: 1.5rem;
+  }
+  
+  .disclaimer-header h1 {
+    font-size: 2rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .checkbox-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .acknowledge-checkbox {
+    margin-top: 0;
+  }
+}
